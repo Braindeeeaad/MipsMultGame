@@ -253,13 +253,14 @@ check_direction_loop:
 
   
     move    $a0,                    $t7
-    jal print_from_address
+    #jal print_from_address
     j       check_direction_loop
 
 
 check_direction_end:
     jal     print_newline
-    slti    $v0,                    $t5,            4                                                                                   # v0 = (t5<4)
+    slti    $v0,                    $t5,            4                                                                                   # v0 = (t5<4)-> need to return t5>=4
+    xori    $v0,                    $v0,            1                                                                                   # v0 = !v0 = !(t5<4) = t5>=4
     lw      $ra,                    0($sp)                                                                                              # Save return address
     lw      $s0,                    4($sp)                                                                                              # Save $s0 (matrix address)
     lw      $s1,                    8($sp)                                                                                              # Save $s1 (i = index, starts at 1)
@@ -495,7 +496,7 @@ pos_to_address:
     syscall
 
     # Print i value
-    move    $a0, $a0                 # Original i is in $a1 (MIPS calling convention)
+    move    $a0, $s0                 # Original i is in $a1 (MIPS calling convention)
     li      $v0, 1
     syscall
 
@@ -505,7 +506,7 @@ pos_to_address:
     syscall
 
     # Print j value
-    move    $a0, $a1                 # Original j is in $a2
+    move    $a0, $s1                 # Original j is in $a2
     li      $v0, 1
     syscall
 
@@ -516,12 +517,16 @@ pos_to_address:
 
 
     # Original address calculation
-    li      $t1, 6
-    mul     $s0, $s0, $t1            # s0 = 6*i
+    li      $t0, 6
+    mul     $s0, $s0, $t0            # s0 = 6*i
     add     $v0, $s0, $s1            # v0 = 6*i + j
     sll     $v0, $v0, 2              # $v0 = (6 * i + j) * 4
     add     $v0, $v0, $a2            # $v0 = matrix_address + byte offset
-
+    move    $t7,   $v0
+    move    $a0     $v0
+    li      $v0,    SysPrintIntHex 
+    syscall
+    move    $v0,    $t7
     # Restore registers
     lw      $ra, 0($sp)
     lw      $s0, 4($sp)
