@@ -13,6 +13,8 @@ newline:            .asciiz     "\n"
 space:              .asciiz     " "
 address_label:      .asciiz     "Address: 0x"
 align_error_msg:    .asciiz     "Error: Memory alignment failure!\n"
+result_msg:         .asciiz     "Found winning condition: "
+value_msg:          .asciiz     "\nWinning value: "
 
 
 
@@ -23,21 +25,40 @@ align_error_msg:    .asciiz     "Error: Memory alignment failure!\n"
     la      $a0,                    matrixpointer
     jal     print_matrix
 
-    li      $a0,                    1
-    li      $a1,                    5
-    la      $a2,                    matrixpointer
-    jal     pos_to_address
 
-    move    $a0,                    $v0
-    lw      $a0,                    0($a0)
-    li      $v0,                    SysPrintInt
+    la      $a0,                    matrixpointer
+    jal     check_matrix
+    # Print results
+    move    $t0,                    $v0                                                                                                 # Save boolean result
+    move    $t1,                    $v1                                                                                                 # Save winning value
+
+    # Print result message
+    li      $v0,                    4
+    la      $a0,                    result_msg
     syscall
+
+    # Print boolean result (1=true, 0=false)
+    li      $v0,                    1
+    move    $a0,                    $t0
+    syscall
+
+    # Print winning value message
+    li      $v0,                    4
+    la      $a0,                    value_msg
+    syscall
+
+    # Print the winning value (if any)
+    li      $v0,                    1
+    move    $a0,                    $t1
+    syscall
+
+
     li      $v0,                    10                                                                                                  # Exit
     syscall
 
 
 check_matrix:
-    addi    $sp,                    $sp,                    -36                                                                         # Allocate stack space (9 registers × 4 bytes)
+    addi    $sp,                    $sp,            -36                                                                                 # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                              # Save return address
     sw      $s0,                    4($sp)                                                                                              # Save $s0 (matrix address)
     sw      $s1,                    8($sp)                                                                                              # Save $s1 (i = index, starts at 1)
@@ -53,9 +74,9 @@ check_matrix:
     li      $s2,                    0                                                                                                   #i=0
 
 check_loop:
-    bge     $s2,                    $s1,                    check_done
-    sll     $s3,                    $s2,                    2                                                                           #s3=i*4
-    add     $s3,                    $s3,                    $s0                                                                         #s3 = i*4 + matrix-address = current-address
+    bge     $s2,                    $s1,            check_done
+    sll     $s3,                    $s2,            2                                                                                   #s3=i*4
+    add     $s3,                    $s3,            $s0                                                                                 #s3 = i*4 + matrix-address = current-address
     li      $t0,                    0                                                                                                   #load t0 = 0(false)
 
     #south-east
@@ -64,7 +85,8 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
     #north-west
     li      $a1,                    -1
@@ -72,15 +94,17 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
-    #south-west 
+    #south-west
     li      $a1,                    1
     li      $a0,                    -1
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
     #north-east
     li      $a1,                    -1
@@ -88,7 +112,8 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
     #north
     li      $a1,                    -1
@@ -96,7 +121,8 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
     #south
     li      $a1,                    1
@@ -104,7 +130,8 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
     #east
     li      $a1,                    0
@@ -112,7 +139,9 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
+
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
     #west
     li      $a1,                    0
@@ -120,22 +149,22 @@ check_loop:
     move    $a2,                    $s3                                                                                                 #a2 = s3 = current-address
     move    $a3,                    $s0                                                                                                 #a3 = s0 = matrix-pointer
     jal     check_directions
-    or      $t0,                    $t0,                    $v0
+    or      $t0,                    $t0,            $v0
 
-    bne     $t0,        $zero,      check_done                                                                                          #exit if we find any 4-contigous blocks
-    
-    addi    $s2,        $s2,        1                                                                                                   #s2++ == i++
+    bne     $t0,                    $zero,          check_done                                                                          #exit if we find any 4-contigous blocks
 
-    j check_loop
+    addi    $s2,                    $s2,            1                                                                                   #s2++ == i++
+
+    j       check_loop
 
 
 
 
 
 check_done:
-    move    $v0,                    $t0                                                                                                 #move the result of the iteration into v0 
+    move    $v0,                    $t0                                                                                                 #move the result of the iteration into v0
     lw      $v1,                    0($s3)                                                                                              #move which num caused contigous memory slots
-    
+
     lw      $ra,                    0($sp)                                                                                              # Restore $ra
     lw      $s0,                    4($sp)                                                                                              # Restore $s0
     lw      $s1,                    8($sp)                                                                                              # Restore $s1
@@ -145,7 +174,7 @@ check_done:
     lw      $t1,                    24($sp)                                                                                             # Restore $t1
     lw      $t2,                    28($sp)                                                                                             # Restore $t2
     lw      $t3,                    32($sp)                                                                                             # Restore $t3
-    addi    $sp,                    $sp,                    36                                                                          # Deallocate stack
+    addi    $sp,                    $sp,            36                                                                                  # Deallocate stack
     jr      $ra                                                                                                                         # Return
 
 
@@ -156,7 +185,7 @@ check_done:
     #a2= current-memaddress
     #a3 = matrix_start_address
 check_directions:
-    addi    $sp,                    $sp,                    -48                                                                         # Allocate stack space (9 registers × 4 bytes)
+    addi    $sp,                    $sp,            -48                                                                                 # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                              # Save return address
     sw      $s0,                    4($sp)                                                                                              # Save $s0 (matrix address)
     sw      $s1,                    8($sp)                                                                                              # Save $s1 (i = index, starts at 1)
@@ -176,8 +205,8 @@ check_directions:
     move    $s2,                    $a2                                                                                                 #s2 = current mem-address
     move    $s3,                    $a3                                                                                                 #s3 = matrix_start_address
     la      $t4,                    0($s2)                                                                                              #t4 = word at current address
-    sub     $s2,                    $s2,                    $s3                                                                         #s2 = current - start
-    sra     $s2,                    $s2,                    2                                                                           #s2 =(current mem - start mem)/4 = index
+    sub     $s2,                    $s2,            $s3                                                                                 #s2 = current - start
+    sra     $s2,                    $s2,            2                                                                                   #s2 =(current mem - start mem)/4 = index
     move    $a0,                    $s2                                                                                                 #moving index value into argument for dividing
     li      $a1,                    6                                                                                                   #loading 6 into divisor
     jal     Divide
@@ -189,36 +218,42 @@ check_directions:
 
 check_direction_loop:
     ##gotta check and make sure t0 and t1 are within bounds, if it is, procede with setting boolean values
-    slti    $t2,                    $t0,                    6                                                                           # check if i< 6
-    slti    $t3,                    $t1,                    6                                                                           # check if j< 6
-    and     $v0,                    $t3,                    $t2                                                                         # v0 = (i<6) && (j<6)
-    slt     $t2,                    $t0,                    $zero                                                                       # check if (i<0)
-    xori    $t2,                    $t2,                    1                                                                           # t2 = !(i<0)=(i>=0)
-    slt     $t3,                    $t1,                    $zero                                                                       #check if (j<0)
-    xori    $t3,                    $t3,                    1                                                                           #t3 = !(j<0)=(j>=0)
-    and     $v1,                    $t3,                    $t2                                                                         # v1 = (i>=0) && (j>=0)
-    and     $v0,                    $v1,                    $v0                                                                         #v0 = v0 && v1
+    slti    $t2,                    $t0,            6                                                                                   # check if i< 6
+    slti    $t3,                    $t1,            6                                                                                   # check if j< 6
+    and     $v0,                    $t3,            $t2                                                                                 # v0 = (i<6) && (j<6)
+    slt     $t2,                    $t0,            $zero                                                                               # check if (i<0)
+    xori    $t2,                    $t2,            1                                                                                   # t2 = !(i<0)=(i>=0)
+    slt     $t3,                    $t1,            $zero                                                                               #check if (j<0)
+    xori    $t3,                    $t3,            1                                                                                   #t3 = !(j<0)=(j>=0)
+    and     $v1,                    $t3,            $t2                                                                                 # v1 = (i>=0) && (j>=0)
+    and     $v0,                    $v1,            $v0                                                                                 #v0 = v0 && v1
 
-    bc1f    $v0,                    check_direction_end                                                                                 #ends loop if indicies get out of position
+
+    beq     $v0,                    $zero,          check_direction_end                                                                 #ends loop if indicies get out of position
 
 
     move    $a0,                    $t0                                                                                                 #a0 = i
     move    $a1,                    $t1                                                                                                 #a1 = j
     move    $a2,                    $s3                                                                                                 #a2 = matrix_address
     jal     pos_to_address
+    move    $t7,                    $v0
+
     lw      $v0,                    0($v0)                                                                                              #dereference address of current num
-    bne     $v0,                    $t4,                    check_direction_end                                                         #end loop if current iterable num is not equal to target num
-                                                          
+    bne     $v0,                    $t4,            check_direction_end                                                                 #end loop if current iterable num is not equal to target num
+
     li      $v1,                    4                                                                                                   #ends the loop if t5>=4
-    bge     $t5,                    $v1,                    check_direction_end
-    addi    $t5,                    $t5,                    1                                                                           #t5(loop-counter)++
-    add     $t0,                    $t0,                    $s1                                                                         #t0 = i + y-direction
-    add     $t1,                    $t1,    $s0                                                                                         #t1 = j + x-direction
+    bge     $t5,                    $v1,            check_direction_end
+    addi    $t5,                    $t5,            1                                                                                   #t5(loop-counter)++
+    add     $t0,                    $t0,            $s1                                                                                 #t0 = i + y-direction
+    add     $t1,                    $t1,            $s0                                                                                 #t1 = j + x-direction
+    move    $a0,                    $t7
+    jal     print_from_address
     j       check_direction_loop
 
 
 check_direction_end:
-    slti    $v0,                    $t5,                    4                                                                           # v0 = (t5<4)
+    jal     print_newline
+    slti    $v0,                    $t5,            4                                                                                   # v0 = (t5<4)
     lw      $ra,                    0($sp)                                                                                              # Save return address
     lw      $s0,                    4($sp)                                                                                              # Save $s0 (matrix address)
     lw      $s1,                    8($sp)                                                                                              # Save $s1 (i = index, starts at 1)
@@ -231,7 +266,7 @@ check_direction_end:
     lw      $t4,                    36($sp)
     lw      $t5,                    40($sp)
     lw      $t6,                    44($sp)
-    addi    $sp,                    $sp,                    48                                                                          # Allocate stack space (9 registers × 4 bytes)
+    addi    $sp,                    $sp,            48                                                                                  # Allocate stack space (9 registers × 4 bytes)
     jr      $ra
 
 
@@ -243,7 +278,7 @@ check_direction_end:
     #Have a print method that segments properly and prints
 
 init_matrix:
-    addi    $sp,                    $sp,                    -28                                                                         # Allocate stack space
+    addi    $sp,                    $sp,            -28                                                                                 # Allocate stack space
     sw      $ra,                    0($sp)                                                                                              # Save return address
     sw      $s0,                    4($sp)                                                                                              # Save preserved register $s0
     sw      $s1,                    8($sp)                                                                                              # Save preserved register $s1
@@ -258,15 +293,15 @@ init_matrix:
     la      $t2,                    matrix_data
 
 init_loop:
-    bge     $t0,                    $s1,                    init_matrix_done                                                            #if i>=36, end loop
-    sll     $t1,                    $t0,                    2                                                                           #t1  = i*4
-    add     $t1,                    $t1,                    $s0                                                                         #t1 = i*4+matrix_address
+    bge     $t0,                    $s1,            init_matrix_done                                                                    #if i>=36, end loop
+    sll     $t1,                    $t0,            2                                                                                   #t1  = i*4
+    add     $t1,                    $t1,            $s0                                                                                 #t1 = i*4+matrix_address
     move    $a0,                    $t2                                                                                                 #a0 = current string address
     jal     atoi                                                                                                                        #transfers control to atoi
     move    $t3,                    $v0                                                                                                 #moves v0(digit) to t3s
     move    $t2,                    $v1                                                                                                 #t2 = next string digit address
     sw      $t3,                    0($t1)                                                                                              #array[i*4+matrix_address] = digit
-    addi    $t0,                    $t0,                    1                                                                           #i++
+    addi    $t0,                    $t0,            1                                                                                   #i++
     j       init_loop
 
 init_matrix_done:
@@ -277,7 +312,7 @@ init_matrix_done:
     lw      $t1,                    16($sp)
     lw      $t2,                    20($sp)
     lw      $t3,                    24($sp)
-    addi    $sp,                    $sp,                    28                                                                          # re-provide stack space
+    addi    $sp,                    $sp,            28                                                                                  # re-provide stack space
     jr      $ra                                                                                                                         # return to caller
 
 
@@ -291,7 +326,7 @@ init_matrix_done:
     # $v0: integer value
     # $v1: new string pointer (after number)
 atoi:
-    addi    $sp,                    $sp,                    -20                                                                         # Allocate stack space
+    addi    $sp,                    $sp,            -20                                                                                 # Allocate stack space
     sw      $ra,                    0($sp)                                                                                              # Save return address
     sw      $s0,                    4($sp)                                                                                              # Save preserved register $s0
     sw      $s1,                    8($sp)                                                                                              # Save preserved register $s1
@@ -304,25 +339,25 @@ atoi:
 
 atoi_loop:
     lb      $t0,                    0($s0)                                                                                              # Load character
-    beq     $t0,                    0,                      atoi_exit                                                                   # Null terminator → exit
-    beq     $t0,                    10,                     atoi_exit                                                                   # Newline → exit
-    beq     $t0,                    32,                     atoi_skip_ws                                                                # Space → skip whitespace
+    beq     $t0,                    0,              atoi_exit                                                                           # Null terminator → exit
+    beq     $t0,                    10,             atoi_exit                                                                           # Newline → exit
+    beq     $t0,                    32,             atoi_skip_ws                                                                        # Space → skip whitespace
 
     # Convert digit (only if 0-9)
-    blt     $t0,                    48,                     atoi_invalid                                                                # Below '0'
-    bgt     $t0,                    57,                     atoi_invalid                                                                # Above '9'
+    blt     $t0,                    48,             atoi_invalid                                                                        # Below '0'
+    bgt     $t0,                    57,             atoi_invalid                                                                        # Above '9'
 
-    addi    $t0,                    $t0,                    -48                                                                         # Convert to digit
-    mul     $v0,                    $v0,                    $t1                                                                         # result *= 10
-    add     $v0,                    $v0,                    $t0                                                                         # result += digit
+    addi    $t0,                    $t0,            -48                                                                                 # Convert to digit
+    mul     $v0,                    $v0,            $t1                                                                                 # result *= 10
+    add     $v0,                    $v0,            $t0                                                                                 # result += digit
 
-    addi    $s0,                    $s0,                    1                                                                           # Next char
+    addi    $s0,                    $s0,            1                                                                                   # Next char
     j       atoi_loop
 
 atoi_skip_ws:
-    addi    $s0,                    $s0,                    1                                                                           # Skip space
+    addi    $s0,                    $s0,            1                                                                                   # Skip space
     lb      $t0,                    0($s0)                                                                                              # Load next char
-    beq     $t0,                    32,                     atoi_skip_ws                                                                # If space, keep skipping
+    beq     $t0,                    32,             atoi_skip_ws                                                                        # If space, keep skipping
     j       atoi_exit                                                                                                                   # Otherwise exit
 
 atoi_invalid:
@@ -337,7 +372,7 @@ atoi_exit:
     lw      $s1,                    8($sp)                                                                                              # Restore $s1
     lw      $t0,                    12($sp)                                                                                             # Restore $t0
     lw      $t1,                    16($sp)
-    addi    $sp,                    $sp,                    20                                                                          # Deallocate stack
+    addi    $sp,                    $sp,            20                                                                                  # Deallocate stack
     jr      $ra                                                                                                                         # Return
 
 
@@ -348,7 +383,7 @@ atoi_exit:
 
 
 print_matrix:
-    addi    $sp,                    $sp,                    -36                                                                         # Allocate stack space (9 registers × 4 bytes)
+    addi    $sp,                    $sp,            -36                                                                                 # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                              # Save return address
     sw      $s0,                    4($sp)                                                                                              # Save $s0 (matrix address)
     sw      $s1,                    8($sp)                                                                                              # Save $s1 (i = index, starts at 1)
@@ -368,20 +403,20 @@ print_matrix:
     j       print_row_loop
 
 print_row_loop:
-    bge     $s1,                    $s3,                    print_matrix_done                                                           #if i>=36 end the loop
+    bge     $s1,                    $s3,            print_matrix_done                                                                   #if i>=36 end the loop
     j       print_col_loop
 
 print_col_loop:
     move    $a0,                    $s1                                                                                                 #load index into argument for Divide
     move    $a1,                    $s2                                                                                                 #load 6 as divisor
     jal     Divide
-    beq     $v0,                    $zero,                  print_col_done
+    beq     $v0,                    $zero,          print_col_done
 
 
-    sll     $a0,                    $s1,                    2                                                                           #a0 = i*4
-    add     $a0,                    $a0,                    $s0                                                                         #a0 = i*4 + matrix_address
+    sll     $a0,                    $s1,            2                                                                                   #a0 = i*4
+    add     $a0,                    $a0,            $s0                                                                                 #a0 = i*4 + matrix_address
     jal     print_from_address                                                                                                          #print current address
-    addi    $s1,                    $s1,                    1                                                                           #i++
+    addi    $s1,                    $s1,            1                                                                                   #i++
     j       print_col_loop
 
 
@@ -389,11 +424,11 @@ print_col_done:
     li      $a0,                    10                                                                                                  #loading asci newline character
     li      $v0,                    SysPrintChar                                                                                        #printing newline
     syscall #
-    beq     $s1,                    $s3,                    print_matrix_done                                                           #extra check to make sure loop prints properly
-    sll     $a0,                    $s1,                    2                                                                           #a0 = i*4
-    add     $a0,                    $a0,                    $s0                                                                         #a0 = i*4 + matrix_address
+    beq     $s1,                    $s3,            print_matrix_done                                                                   #extra check to make sure loop prints properly
+    sll     $a0,                    $s1,            2                                                                                   #a0 = i*4
+    add     $a0,                    $a0,            $s0                                                                                 #a0 = i*4 + matrix_address
     jal     print_from_address                                                                                                          #print current address
-    addi    $s1,                    $s1,                    1                                                                           #i++
+    addi    $s1,                    $s1,            1                                                                                   #i++
     j       print_row_loop
 
 print_matrix_done:
@@ -406,14 +441,26 @@ print_matrix_done:
     lw      $t1,                    24($sp)                                                                                             # Restore $t1
     lw      $t2,                    28($sp)                                                                                             # Restore $t2
     lw      $t3,                    32($sp)                                                                                             # Restore $t3
-    addi    $sp,                    $sp,                    36                                                                          # Deallocate stack
+    addi    $sp,                    $sp,            36                                                                                  # Deallocate stack
     jr      $ra                                                                                                                         # Return
 
 
 
 
 
+print_newline:
+    addi    $sp,                    $sp,            -8                                                                                  # Allocate space on stack
+    sw      $ra,                    0($sp)                                                                                              # Store return address
+    sw      $v0,                    4($sp)
 
+    li      $v0,                    11                                                                                                  # System call for print character
+    li      $a0,                    10                                                                                                  # ASCII code for newline (10)
+    syscall
+
+    lw      $ra,                    0($sp)                                                                                              # Restore return address
+    lw      $v0,                    4($sp)
+    addi    $sp,                    $sp,            8                                                                                   # Restore stack pointer
+    jr      $ra                                                                                                                         # Return to caller
 
 Divide:
     div     $a0,                    $a1                                                                                                 # Divide $a0 by $a1 (LO = quotient, HI = remainder)
@@ -428,7 +475,7 @@ Divide:
     #returns
     #v0=matrix_position_from address
 pos_to_address:
-    addi    $sp,                    $sp,                    -16                                                                         # Allocate stack space
+    addi    $sp,                    $sp,            -16                                                                                 # Allocate stack space
     sw      $ra,                    0($sp)                                                                                              # Save return address
     sw      $s0,                    4($sp)                                                                                              # Save preserved register $s0
     sw      $s1,                    8($sp)                                                                                              # Save preserved register $s1
@@ -437,35 +484,39 @@ pos_to_address:
     move    $s0,                    $a0                                                                                                 # s0 = i
     move    $s1,                    $a1                                                                                                 # s1 = j
     li      $t1,                    6                                                                                                   #t1 = 6
-    mul     $s0,                    $s0,                    $t1                                                                         #s0 = 6*i
-    add     $v0,                    $s0,                    $s1                                                                         #v0 = 6*i + j
-    sll     $v0,                    $v0,                    2                                                                           # $v0 = (6 * i + j) * 4 (byte offset)
-    add     $v0,                    $v0,                    $a2                                                                         # $v0 = matrix_address + byte offset
+    mul     $s0,                    $s0,            $t1                                                                                 #s0 = 6*i
+    add     $v0,                    $s0,            $s1                                                                                 #v0 = 6*i + j
+    sll     $v0,                    $v0,            2                                                                                   # $v0 = (6 * i + j) * 4 (byte offset)
+    add     $v0,                    $v0,            $a2                                                                                 # $v0 = matrix_address + byte offset
 
 
     lw      $ra,                    0($sp)                                                                                              # Restore return address
     lw      $s0,                    4($sp)                                                                                              # Restore $s0
     lw      $s1,                    8($sp)                                                                                              # Restore $s1
     lw      $t0,                    12($sp)                                                                                             # Restore $t0
-    addi    $sp,                    $sp,                    16                                                                          # Deallocate stack space
+    addi    $sp,                    $sp,            16                                                                                  # Deallocate stack space
     jr      $ra                                                                                                                         # Return to caller
 
 print_from_address:
-    addi    $sp,                    $sp,                    -4                                                                          # Allocate stack space
+    addi    $sp,                    $sp,            -4                                                                                  # Allocate stack space
     sw      $ra,                    0($sp)
+
+
     lw      $a0,                    0($a0)
     li      $v0,                    SysPrintInt
     syscall
-    lw      $ra,                    0($sp)
-    addi    $sp,                    $sp,                    4
     li      $a0,                    32                                                                                                  #load space ascii character
     li      $v0,                    SysPrintChar                                                                                        #prints space after printing the int
     syscall
 
+    lw      $ra,                    0($sp)
+    addi    $sp,                    $sp,            4
+
+
     jr      $ra
 
 print_address:
-    addi    $sp,                    $sp,                    -4                                                                          # Allocate stack space
+    addi    $sp,                    $sp,            -4                                                                                  # Allocate stack space
     sw      $ra,                    0($sp)                                                                                              # Save return address
 
     # Print the address label
@@ -484,5 +535,5 @@ print_address:
     syscall
 
     lw      $ra,                    0($sp)                                                                                              # Restore return address
-    addi    $sp,                    $sp,                    4                                                                           # Deallocate stack space
+    addi    $sp,                    $sp,            4                                                                                   # Deallocate stack space
     jr      $ra                                                                                                                         # Return
