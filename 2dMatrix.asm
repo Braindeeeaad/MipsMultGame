@@ -15,7 +15,9 @@ address_label:      .asciiz     "Address: 0x"
 align_error_msg:    .asciiz     "Error: Memory alignment failure!\n"
 result_msg:         .asciiz     "Found winning condition: "
 value_msg:          .asciiz     "\nWinning value: "
-
+indices_msg:    .asciiz "Converting indices ("
+comma:          .asciiz ", "
+closing_paren:  .asciiz ") to address...\n"
 
 
 .text
@@ -28,6 +30,7 @@ value_msg:          .asciiz     "\nWinning value: "
 
     la      $a0,                    matrixpointer
     jal     check_matrix
+
     # Print results
     move    $t0,                    $v0                                                                                                 # Save boolean result
     move    $t1,                    $v1                                                                                                 # Save winning value
@@ -204,7 +207,7 @@ check_directions:
     move    $s1,                    $a1                                                                                                 #s1 = direction to move for y
     move    $s2,                    $a2                                                                                                 #s2 = current mem-address
     move    $s3,                    $a3                                                                                                 #s3 = matrix_start_address
-    la      $t4,                    0($s2)                                                                                              #t4 = word at current address
+    lw      $t4,                    0($s2)                                                                                              #t4 = word at current address
     sub     $s2,                    $s2,            $s3                                                                                 #s2 = current - start
     sra     $s2,                    $s2,            2                                                                                   #s2 =(current mem - start mem)/4 = index
     move    $a0,                    $s2                                                                                                 #moving index value into argument for dividing
@@ -247,7 +250,10 @@ check_direction_loop:
     add     $t0,                    $t0,            $s1                                                                                 #t0 = i + y-direction
     add     $t1,                    $t1,            $s0                                                                                 #t1 = j + x-direction
     move    $a0,                    $t7
-    jal     print_from_address
+
+  
+    move    $a0,                    $t7
+    jal print_from_address
     j       check_direction_loop
 
 
@@ -475,28 +481,56 @@ Divide:
     #returns
     #v0=matrix_position_from address
 pos_to_address:
-    addi    $sp,                    $sp,            -16                                                                                 # Allocate stack space
-    sw      $ra,                    0($sp)                                                                                              # Save return address
-    sw      $s0,                    4($sp)                                                                                              # Save preserved register $s0
-    sw      $s1,                    8($sp)                                                                                              # Save preserved register $s1
-    sw      $t0,                    12($sp)                                                                                             # Save temporary register $t0
-
+    addi    $sp, $sp, -16            # Allocate stack space (extra word for printing)
+    sw      $ra, 0($sp)              # Save return address
+    sw      $s0, 4($sp)              # Save $s0
+    sw      $s1, 8($sp)              # Save $s1
+    sw      $t0, 12($sp)             # Save $t0
+    
     move    $s0,                    $a0                                                                                                 # s0 = i
-    move    $s1,                    $a1                                                                                                 # s1 = j
-    li      $t1,                    6                                                                                                   #t1 = 6
-    mul     $s0,                    $s0,            $t1                                                                                 #s0 = 6*i
-    add     $v0,                    $s0,            $s1                                                                                 #v0 = 6*i + j
-    sll     $v0,                    $v0,            2                                                                                   # $v0 = (6 * i + j) * 4 (byte offset)
-    add     $v0,                    $v0,            $a2                                                                                 # $v0 = matrix_address + byte offset
+    move    $s1,                    $a1      
+    # Print indices message
+    li      $v0, 4
+    la      $a0, indices_msg
+    syscall
+
+    # Print i value
+    move    $a0, $a0                 # Original i is in $a1 (MIPS calling convention)
+    li      $v0, 1
+    syscall
+
+    # Print comma separator
+    li      $v0, 4
+    la      $a0, comma
+    syscall
+
+    # Print j value
+    move    $a0, $a1                 # Original j is in $a2
+    li      $v0, 1
+    syscall
+
+    # Print closing parenthesis
+    li      $v0, 4
+    la      $a0, closing_paren
+    syscall
 
 
-    lw      $ra,                    0($sp)                                                                                              # Restore return address
-    lw      $s0,                    4($sp)                                                                                              # Restore $s0
-    lw      $s1,                    8($sp)                                                                                              # Restore $s1
-    lw      $t0,                    12($sp)                                                                                             # Restore $t0
-    addi    $sp,                    $sp,            16                                                                                  # Deallocate stack space
-    jr      $ra                                                                                                                         # Return to caller
+    # Original address calculation
+    li      $t1, 6
+    mul     $s0, $s0, $t1            # s0 = 6*i
+    add     $v0, $s0, $s1            # v0 = 6*i + j
+    sll     $v0, $v0, 2              # $v0 = (6 * i + j) * 4
+    add     $v0, $v0, $a2            # $v0 = matrix_address + byte offset
 
+    # Restore registers
+    lw      $ra, 0($sp)
+    lw      $s0, 4($sp)
+    lw      $s1, 8($sp)
+    lw      $t0, 12($sp)
+    addi    $sp, $sp, 16
+    jr      $ra
+
+    
 print_from_address:
     addi    $sp,                    $sp,            -4                                                                                  # Allocate stack space
     sw      $ra,                    0($sp)
