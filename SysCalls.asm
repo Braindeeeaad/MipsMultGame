@@ -19,6 +19,7 @@
 	.eqv	SysWriteFile	15
 	.eqv	SysCloseFile	16
 	.eqv	SysExitValue	17
+	.eqv	SysGetSeed		30
 	.eqv	SysPrintIntHex  34
 	.eqv	SysPrintIntBin	35
 	.eqv	SysRandInt	41
