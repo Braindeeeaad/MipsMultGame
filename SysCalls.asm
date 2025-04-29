@@ -2,6 +2,7 @@
 # This file must be included using .include "SysCalls.asm" rather
 # than being assembled as a separate module.
 # Written by John Cole starting January 2, 2022
+
 	.eqv	SysPrintInt 	1
 	.eqv	SysPrintFloat 	2
 	.eqv	SysPrintDouble	3

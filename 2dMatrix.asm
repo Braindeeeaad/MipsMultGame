@@ -4,27 +4,42 @@
     #	Date: 03-12-2025
     #	Location: UTD
     #
+.include     "SysCalls.asm"
 
-                    .include    "SysCalls.asm"                                                                                      # include this file in all programs
 .data
-matrixpointer:      .space      144
-    # "1 2 3 4 5 6 7 8 9 10 12 14 15 16 18 20 21 24 25 27 28 30 32 35 36 40 42 45 48 49 54 56 63 64 72 81"
-matrix_data:        .asciiz     "1 2 3 4 5 6 7 1 9 10 12 14 15 16 1 20 21 24 25 27 28 1 1 35 36 40 42 45 48 49 54 56 63 64 72 81"
-newline:            .asciiz     "\n"
-space:              .asciiz     " "
-address_label:      .asciiz     "Address: 0x"
-align_error_msg:    .asciiz     "Error: Memory alignment failure!\n"
-result_msg:         .asciiz     "Found winning condition: "
-value_msg:          .asciiz     "\nWinning value: "
-indices_msg:        .asciiz     "Converting indices ("
-comma:              .asciiz     ", "
-closing_paren:      .asciiz     ") to address...\n"
 
+
+# Global symbol declarations
+#.globl matrixpointer
+#matrixpointer:      .space      144
+    
+    # "1 2 3 4 5 6 7 8 9 10 12 14 15 16 18 20 21 24 25 27 28 30 32 35 36 40 42 45 48 49 54 56 63 64 72 81"
+.globl matrix_data
+matrix_data:        .asciiz     "1 2 3 4 5 6 7 1 9 10 12 14 15 16 1 20 21 24 25 27 28 1 1 35 36 40 42 45 48 49 54 56 63 64 72 81"
+.globl newline
+newline:            .asciiz     "\n"
+.globl space
+space:              .asciiz     " "
+.globl address_label
+address_label:      .asciiz     "Address: 0x"
+.globl align_error_msg
+align_error_msg:    .asciiz     "Error: Memory alignment failure!\n"
+.globl result_msg
+result_msg:         .asciiz     "Found winning condition: "
+.globl value_msg
+value_msg:          .asciiz     "\nWinning value: "
+.globl indices_msg
+indices_msg:        .asciiz     "Converting indices ("
+.globl comma
+comma:              .asciiz     ", "
+.globl closing_paren
+closing_paren:      .asciiz     ") to address...\n"
 
 .text
     #Arguments
     #a0 = num to search for
     #a1 = matrix_address
+.globl linear_search
 linear_search:
     addi    $sp,                    $sp,            -36                                                                             # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -71,6 +86,7 @@ linear_end:
     addi    $sp,                    $sp,            36                                                                              # Deallocate stack
     jr      $ra                                                                                                                     # Return
 
+.globl check_matrix
 check_matrix:
     addi    $sp,                    $sp,            -36                                                                             # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -86,7 +102,7 @@ check_matrix:
     move    $s0,                    $a0                                                                                             #s0 = matrix_pointer
     li      $s1,                    36                                                                                              #s1 = move 36, total num of items
     li      $s2,                    0                                                                                               #i=0
-
+.globl check_loop 
 check_loop:
     bge     $s2,                    $s1,            check_done
     sll     $s3,                    $s2,            2                                                                               #s3=i*4
@@ -174,7 +190,7 @@ check_loop:
 
 
 
-
+.globl check_done
 check_done:
     move    $v0,                    $t0                                                                                             #move the result of the iteration into v0
     lw      $v1,                    0($s3)                                                                                          #move which num caused contigous memory slots
@@ -198,6 +214,7 @@ check_done:
     #a1= y-direction
     #a2= current-memaddress
     #a3 = matrix_start_address
+.globl check_directions
 check_directions:
     addi    $sp,                    $sp,            -48                                                                             # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -229,7 +246,7 @@ check_directions:
     li      $t5,                    0                                                                                               #t5(loop counter) = 0
 
 
-
+.globl check_direction_loop
 check_direction_loop:
     ##gotta check and make sure t0 and t1 are within bounds, if it is, procede with setting boolean values
     slti    $t2,                    $t0,            6                                                                               # check if i< 6
@@ -267,7 +284,7 @@ check_direction_loop:
     #jal print_from_address
     j       check_direction_loop
 
-
+.globl check_direction_end
 check_direction_end:
     jal     print_newline
     slti    $v0,                    $t5,            4                                                                               # v0 = (t5<4)-> need to return t5>=4
@@ -294,7 +311,7 @@ check_direction_end:
     #Esenitally have one init method, which initalizes that empty buffer with values form the inital string data
     #then have a method that returns memory addresses by doing a linear search given cell value
     #Have a print method that segments properly and prints
-
+.globl init_matrix
 init_matrix:
     addi    $sp,                    $sp,            -28                                                                             # Allocate stack space
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -310,6 +327,7 @@ init_matrix:
     li      $t0,                    0                                                                                               #i=0
     la      $t2,                    matrix_data
 
+.globl init_loop
 init_loop:
     bge     $t0,                    $s1,            init_matrix_done                                                                #if i>=36, end loop
     sll     $t1,                    $t0,            2                                                                               #t1  = i*4
@@ -321,7 +339,7 @@ init_loop:
     sw      $t3,                    0($t1)                                                                                          #array[i*4+matrix_address] = digit
     addi    $t0,                    $t0,            1                                                                               #i++
     j       init_loop
-
+.globl init_matrix_done
 init_matrix_done:
     lw      $ra,                    0($sp)                                                                                          # load return address
     lw      $s0,                    4($sp)                                                                                          # restore preserved register $s0
@@ -343,6 +361,7 @@ init_matrix_done:
     # Returns:
     # $v0: integer value
     # $v1: new string pointer (after number)
+.globl atoi
 atoi:
     addi    $sp,                    $sp,            -20                                                                             # Allocate stack space
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -355,6 +374,7 @@ atoi:
     li      $v0,                    0                                                                                               # Initialize result
     li      $t1,                    10                                                                                              # Base 10
 
+.globl atoi_loop
 atoi_loop:
     lb      $t0,                    0($s0)                                                                                          # Load character
     beq     $t0,                    0,              atoi_exit                                                                       # Null terminator → exit
@@ -371,18 +391,18 @@ atoi_loop:
 
     addi    $s0,                    $s0,            1                                                                               # Next char
     j       atoi_loop
-
+.globl atoi_skip_ws
 atoi_skip_ws:
     addi    $s0,                    $s0,            1                                                                               # Skip space
     lb      $t0,                    0($s0)                                                                                          # Load next char
     beq     $t0,                    32,             atoi_skip_ws                                                                    # If space, keep skipping
     j       atoi_exit                                                                                                               # Otherwise exit
-
+.globl atoi_invalid
 atoi_invalid:
     # Handle invalid digit (optional)
     li      $v0,                    -1                                                                                              # Return error code
     j       atoi_exit
-
+.globl atoi_exit
 atoi_exit:
     move    $v1,                    $s0                                                                                             # Return new pointer
     lw      $ra,                    0($sp)                                                                                          # Restore return address
@@ -399,7 +419,7 @@ atoi_exit:
 
 
 
-
+.globl print_matrix
 print_matrix:
     addi    $sp,                    $sp,            -36                                                                             # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -419,11 +439,12 @@ print_matrix:
     li      $s2,                    6                                                                                               #s2 = 6(for checking purposes
     li      $s3,                    36                                                                                              #s3 = 36(total num of items)
     j       print_row_loop
-
+.globl print_row_loop
 print_row_loop:
     bge     $s1,                    $s3,            print_matrix_done                                                               #if i>=36 end the loop
     j       print_col_loop
 
+.globl print_col_loop
 print_col_loop:
     move    $a0,                    $s1                                                                                             #load index into argument for Divide
     move    $a1,                    $s2                                                                                             #load 6 as divisor
@@ -437,7 +458,7 @@ print_col_loop:
     addi    $s1,                    $s1,            1                                                                               #i++
     j       print_col_loop
 
-
+.globl print_col_done
 print_col_done:
     li      $a0,                    10                                                                                              #loading asci newline character
     li      $v0,                    SysPrintChar                                                                                    #printing newline
@@ -448,7 +469,7 @@ print_col_done:
     jal     print_from_address                                                                                                      #print current address
     addi    $s1,                    $s1,            1                                                                               #i++
     j       print_row_loop
-
+.globl print_matrix_done
 print_matrix_done:
     lw      $ra,                    0($sp)                                                                                          # Restore $ra
     lw      $s0,                    4($sp)                                                                                          # Restore $s0
@@ -465,7 +486,7 @@ print_matrix_done:
 
 
 
-
+.globl print_newline
 print_newline:
     addi    $sp,                    $sp,            -8                                                                              # Allocate space on stack
     sw      $ra,                    0($sp)                                                                                          # Store return address
@@ -479,7 +500,7 @@ print_newline:
     lw      $v0,                    4($sp)
     addi    $sp,                    $sp,            8                                                                               # Restore stack pointer
     jr      $ra                                                                                                                     # Return to caller
-
+.globl Divide
 Divide:
     div     $a0,                    $a1                                                                                             # Divide $a0 by $a1 (LO = quotient, HI = remainder)
     mfhi    $v0                                                                                                                     # Move remainder (HI) to $v0
@@ -492,6 +513,7 @@ Divide:
     #a2=matrix_address
     #returns
     #v0=matrix_position_from address
+.globl pos_to_address
 pos_to_address:
     addi    $sp,                    $sp,            -16                                                                             # Allocate stack space (extra word for printing)
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -546,7 +568,7 @@ pos_to_address:
     addi    $sp,                    $sp,            16
     jr      $ra
 
-
+.globl print_from_address
 print_from_address:
     addi    $sp,                    $sp,            -4                                                                              # Allocate stack space
     sw      $ra,                    0($sp)
@@ -564,7 +586,7 @@ print_from_address:
 
 
     jr      $ra
-
+.globl print_address
 print_address:
     addi    $sp,                    $sp,            -4                                                                              # Allocate stack space
     sw      $ra,                    0($sp)                                                                                          # Save return address
@@ -587,3 +609,5 @@ print_address:
     lw      $ra,                    0($sp)                                                                                          # Restore return address
     addi    $sp,                    $sp,            4                                                                               # Deallocate stack space
     jr      $ra                                                                                                                     # Return
+
+

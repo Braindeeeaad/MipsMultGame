@@ -1,28 +1,61 @@
 
-                .include    "2dMatrix.asm"
-                #.include     "SysCalls.asm" 
+    #.include    "2dMatrix.asm"
+                .include    "SysCalls.asm"
+
 .data
+                .globl      left_border
+                .globl      right_border
 array:          .space      36
 firstpointer:   .space      4
+matrixpointer:  .space      144
 secpointer:     .space      4
 left_border:    .asciiz     "| "
 separator:      .asciiz     " | "
 right_border:   .asciiz     " |"
-#newline:            .asciiz     "\n"
-#space:              .asciiz     " "
+newline:        .asciiz     "\n"
+space:          .asciiz     " "
+
 .text
     #
     #Need to do move validation(linear-search->returns(-1, then invalid move)
     #Need an array from [1,...,9]
+                .globl      main
+main:
+    la      $a0,                            matrixpointer                                   # Load matrix pointer address
+    jal     init_matrix                                                                     # Initialize with our data
 
+    la      $a0,                            matrixpointer
+    jal     print_matrix
+
+    la      $a0,                            array
     jal     init_array
     #jal print_array
+    la      $a0,                            firstpointer
+    la      $a1,                            secpointer
     jal     init_pointers
+    la      $a0,                            firstpointer
+    la      $a1,                            secpointer
+    la      $a2,                            array
     jal     print_pointers
-
     li      $v0,                            SysExit
     syscall
 
+
+
+    #$a0 = new first pointer value
+    #$a1 = new second pointer values
+                .globl      move_pointers
+move_pointers:
+    
+
+
+
+
+
+
+                .globl      init_array
+
+    #a0 = array-address
 init_array:
     addi    $sp,                            $sp,                -36                         # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                            0($sp)                                          # Save return address
@@ -37,7 +70,7 @@ init_array:
 
     li      $s0,                            0                                               #i = 0
     li      $s1,                            9                                               #limit(9)
-    la      $s2,                            array                                           #s2 = array address
+    move    $s2,                            $a0                                             #s2 = array address
 init_array_loop:
     bge     $s0,                            $s1,                init_array_done
     sll     $t0,                            $s0,                2                           #t0 = i*4
@@ -59,6 +92,8 @@ init_array_done:
     addi    $sp,                            $sp,                36                          # Deallocate stack
     jr      $ra                                                                             # Return
 
+                .globl      print_array
+    #a0 = array-address
 print_array:
     addi    $sp,                            $sp,                -16                         # Allocate stack space
     sw      $ra,                            0($sp)                                          # Save return address
@@ -66,7 +101,7 @@ print_array:
     sw      $s1,                            8($sp)                                          # Save $s1 (counter)
     sw      $t0,                            12($sp)                                         # Save $t0 (temporary)
 
-    la      $s0,                            array                                           # Load array address
+    move    $s0,                            $a0                                             # Load array address
     li      $s1,                            0                                               # Initialize counter
 
     # Print left border
@@ -115,6 +150,10 @@ print_end:
 
     #initalize two pointer, first starts at 1(or 0/-1),
     #the second pointer gets randomly appointed from 2-9
+                .globl      init_pointers
+    #$a0 = firstpointer
+    #$a1 = secpointer
+
 init_pointers:
     addi    $sp,                            $sp,                -36                         # Allocate stack space (9 registers × 4 bytes)
     sw      $ra,                            0($sp)                                          # Save return address
@@ -127,10 +166,10 @@ init_pointers:
     sw      $t2,                            28($sp)                                         # Save $t2 (temporary)
     sw      $t3,                            32($sp)
 
-    la      $s0,                            firstpointer                                    # s0 = firstpointer-address
-    la      $s1,                            secpointer                                      # s1 = secpointer-address
+    move    $s0,                            $a0                                             # s0 = firstpointer-address
+    move    $s1,                            $a1                                             # s1 = secpointer-address
     li      $s2,                            1
-    sw      $s2                             0($s0)                                                # set value_of(firstpointer-address) = -1
+    sw      $s2,                            0($s0)                                          # set value_of(firstpointer-address) = -1
 
     li      $a1,                            8                                               #Here you set $a1 to the max bound.
     li      $v0,                            SysRandIntRange                                 #generates the random number.
@@ -160,6 +199,10 @@ init_pointers:
     #then multiply those values, do valiation check
     #if validation is false then return 0(prompts for retry)
     #if validation is true then  return 1, and get address from validation, then set value of address = a0
+                .globl      print_pointers
+    #$a0 = firstpointer
+    #$a1 = secpointer
+    #$a2 = array
 
 print_pointers:
     addi    $sp,                            $sp,                -36                         # Allocate stack space
@@ -173,9 +216,9 @@ print_pointers:
     sw      $t2,                            28($sp)                                         # Save $t2 (temporary)
     sw      $t3,                            32($sp)                                         # Save $t3 (temporary)
 
-    la      $s0,                            array                                           # Load array address
-    la      $t0,                            firstpointer                                    # Load first pointer address
-    la      $t1,                            secpointer                                      # Load second pointer address
+    move    $s0,                            $a2                                             # Load array address
+    move    $t0,                            $a0                                             # Load first pointer address
+    move    $t1,                            $a1                                             # Load second pointer address
     lw      $s2,                            0($t0)                                          # Load first pointer value
     lw      $s3,                            0($t1)                                          # Load second pointer value
 
@@ -206,7 +249,6 @@ print_first_pointer_marker:
 
     # Print the second pointer (1) in its proper position
     li      $s1,                            1                                               # Start at position 1
-
 print_second_pointer_spaces:
     bge     $s1,                            $s3,                print_second_pointer_marker
     li      $v0,                            SysPrintString
@@ -226,6 +268,7 @@ print_second_pointer_marker:
     syscall
 
     # Now print the array normally
+    move    $a0,                            $s0
     jal     print_array                                                                     # Call the existing print_array function
 
     # Restore registers
@@ -240,3 +283,5 @@ print_second_pointer_marker:
     lw      $t3,                            32($sp)
     addi    $sp,                            $sp,                36
     jr      $ra
+
+
