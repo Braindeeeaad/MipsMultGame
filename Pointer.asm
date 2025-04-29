@@ -10,6 +10,10 @@ separator:      .asciiz     " | "
 right_border:   .asciiz     " |"
 newline:        .asciiz     "\n"
 space:          .asciiz     " "
+zero_label:     .asciiz "0:"
+one_label:      .asciiz "1:"
+array_label:    .asciiz "a:"
+caret:          .asciiz "&"
 
 .text
     #
@@ -240,24 +244,28 @@ print_pointers:
     lw      $s2,                            0($t0)                                                                  # Load first pointer value
     lw      $s3,                            0($t1)                                                                  # Load second pointer value
 
-    # Print the first pointer (0) in its proper position
-    li      $s1,                            1                                                                       # Start at position 1
-    sll     $s2,                            $s2,                                        2
-    addi    $s2,                            $s2,                                        -1
-    sll     $s3,                            $s3,                                        2
-    addi    $s3,                            $s3,                                        -1
-
-print_first_pointer_spaces:
-    bge     $s1,                            $s2,                                        print_first_pointer_marker
+    # Print "0:" label
     li      $v0,                            SysPrintString
-    la      $a0,                            space                                                                   # Print spaces to align the "0"
+    la      $a0,                            zero_label                                                              # Print "0:"
+    syscall
+
+    # Calculate position for first pointer (multiply by 4 since each element is 4 bytes)
+    sll     $t2,                            $s2,                                        2                           # Multiply by 4
+    addi    $t2,                            $t2,                                        -2                           # Add 2 for "0:" plus 1 space
+
+    # Print spaces before caret for first pointer
+    li      $s1,                            0                                                                       # Space counter
+print_first_pointer_spaces:
+    bge     $s1,                            $t2,                                        print_first_pointer_caret
+    li      $v0,                            SysPrintString
+    la      $a0,                            space                                                                   # Print space
     syscall
     addi    $s1,                            $s1,                                        1
     j       print_first_pointer_spaces
 
-print_first_pointer_marker:
-    li      $v0,                            SysPrintInt
-    li      $a0,                            0                                                                       # Print "0" for first pointer
+print_first_pointer_caret:
+    li      $v0,                            SysPrintString
+    la      $a0,                            caret                                                                   # Print "^"
     syscall
 
     # Print newline
@@ -265,24 +273,38 @@ print_first_pointer_marker:
     la      $a0,                            newline
     syscall
 
-    # Print the second pointer (1) in its proper position
-    li      $s1,                            1                                                                       # Start at position 1
-print_second_pointer_spaces:
-    bge     $s1,                            $s3,                                        print_second_pointer_marker
+    # Print "1:" label
     li      $v0,                            SysPrintString
-    la      $a0,                            space                                                                   # Print spaces to align the "1"
+    la      $a0,                            one_label                                                               # Print "1:"
+    syscall
+
+    # Calculate position for second pointer
+    sll     $t3,                            $s3,                                        2                           # Multiply by 4
+    addi    $t3,                            $t3,                                       -2                           # Add 2 for "1:" plus 1 space
+
+    # Print spaces before caret for second pointer
+    li      $s1,                            0                                                                       # Space counter
+print_second_pointer_spaces:
+    bge     $s1,                            $t3,                                        print_second_pointer_caret
+    li      $v0,                            SysPrintString
+    la      $a0,                            space                                                                   # Print space
     syscall
     addi    $s1,                            $s1,                                        1
     j       print_second_pointer_spaces
 
-print_second_pointer_marker:
-    li      $v0,                            SysPrintInt
-    li      $a0,                            1                                                                       # Print "1" for second pointer
+print_second_pointer_caret:
+    li      $v0,                            SysPrintString
+    la      $a0,                            caret                                                                   # Print "^"
     syscall
 
     # Print newline
     li      $v0,                            SysPrintString
     la      $a0,                            newline
+    syscall
+
+    # Print "a:" label
+    li      $v0,                            SysPrintString
+    la      $a0,                            array_label                                                             # Print "a:"
     syscall
 
     # Now print the array normally
@@ -302,4 +324,4 @@ print_second_pointer_marker:
     addi    $sp,                            $sp,                                        36
     jr      $ra
 
-
+#
