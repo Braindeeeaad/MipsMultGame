@@ -65,7 +65,7 @@ move_pointers_pos:
     li      $v0,                            1
 move_pointers_done:
 
-    slt     $v0,                            $v0             $zero
+    slt     $v0,                            $zero             $v0
     lw      $ra,                            0($sp)                                                                  # Restore $ra
     lw      $s0,                            4($sp)                                                                  # Restore $s0
     lw      $s1,                            8($sp)                                                                  # Restore $s1
