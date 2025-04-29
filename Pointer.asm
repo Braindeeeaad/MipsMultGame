@@ -24,13 +24,6 @@ space:          .asciiz     " "
     #$a3 = secondpointer new value
     #$t0 = player or compuer(-1 for comp, -2 for player)
     #$t1 = matrix_address
-    #move_pointers:
-    #make a method that takes inputs for both pointer indexes
-    #this method should get a value a0 = (-2 for user, -1 for computer)
-    #this method should get values a1 & a2 =  from those indices
-    #then multiply those values, do valiation check
-    #if validation is false then return 0(prompts for retry)
-    #if validation is true then  return 1, and get address from validation, then set value of address = a0
                 .globl      move_pointers
 move_pointers:
     addi    $sp,                            $sp,                                        -36                         # Allocate stack space (9 registers × 4 bytes)

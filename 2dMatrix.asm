@@ -286,7 +286,7 @@ check_direction_loop:
 
 .globl check_direction_end
 check_direction_end:
-    jal     print_newline
+   # jal     print_newline
     slti    $v0,                    $t5,            4                                                                               # v0 = (t5<4)-> need to return t5>=4
     xori    $v0,                    $v0,            1                                                                               # v0 = !v0 = !(t5<4) = t5>=4
     lw      $ra,                    0($sp)                                                                                          # Save return address
@@ -523,31 +523,6 @@ pos_to_address:
 
     move    $s0,                    $a0                                                                                             # s0 = i
     move    $s1,                    $a1
-    # Print indices message
-    li      $v0,                    4
-    la      $a0,                    indices_msg
-    syscall
-
-    # Print i value
-    move    $a0,                    $s0                                                                                             # Original i is in $a1 (MIPS calling convention)
-    li      $v0,                    1
-    syscall
-
-    # Print comma separator
-    li      $v0,                    4
-    la      $a0,                    comma
-    syscall
-
-    # Print j value
-    move    $a0,                    $s1                                                                                             # Original j is in $a2
-    li      $v0,                    1
-    syscall
-
-    # Print closing parenthesis
-    li      $v0,                    4
-    la      $a0,                    closing_paren
-    syscall
-
 
     # Original address calculation
     li      $t0,                    6
@@ -557,8 +532,6 @@ pos_to_address:
     add     $v0,                    $v0,            $a2                                                                             # $v0 = matrix_address + byte offset
     move    $t7,                    $v0
     move    $a0,                    $v0
-    li      $v0,                    SysPrintIntHex
-    syscall
     move    $v0,                    $t7
     # Restore registers
     lw      $ra,                    0($sp)
